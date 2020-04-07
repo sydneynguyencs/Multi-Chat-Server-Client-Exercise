@@ -1,0 +1,42 @@
+/*
+ * Default gradle configuration file.
+ * These configurations are applied to all subprojects (modules / exercises) of this lab
+ * They can be extended / overridden by the local build.gradle files in the subprojects
+ * (subdirectories of handout / solution directory)
+ */
+
+// Default settings for all projects
+allprojects {
+    group = 'ch.zhaw.pm2.multichat'
+    version = '2020.1'
+}
+
+// Default settings for subprojects
+subprojects {
+    // Apply the java plugin to add support for Java
+    apply plugin: 'java'
+
+    repositories {
+        // Use jcenter for resolving dependencies.
+        jcenter()
+    }
+
+    // by default use Java 11
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+
+    // include JUnit5 tests by default
+    dependencies {
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.6.0'
+    }
+
+    test {
+        // Use junit platform for unit tests
+        useJUnitPlatform()
+    }
+
+    // all source files are encoded as UTF-8
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+    }
+}
