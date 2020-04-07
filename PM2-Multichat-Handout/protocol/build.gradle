@@ -1,0 +1,13 @@
+/*
+ * Gradle build configuration for specific lab module / exercise
+ * Default declarations can be found in the lab main build configuration (../../gradle.build)
+ * Declarations in this file extend or override the default values.
+ */
+// the Java plugin is added by default in the main configuration
+plugins {
+
+}
+
+dependencies {
+
+}
