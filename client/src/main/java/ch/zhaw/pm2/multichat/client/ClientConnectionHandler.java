@@ -1,32 +1,18 @@
 package ch.zhaw.pm2.multichat.client;
 
 import ch.zhaw.pm2.multichat.protocol.ChatProtocolException;
+import ch.zhaw.pm2.multichat.protocol.ConnectionHandler;
 import ch.zhaw.pm2.multichat.protocol.NetworkHandler;
 
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketException;
-import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static ch.zhaw.pm2.multichat.client.ClientConnectionHandler.State.*;
 
-public class ClientConnectionHandler {
-    private final NetworkHandler.NetworkConnection<String> connection;
+public class ClientConnectionHandler extends ConnectionHandler {
     private final ChatWindowController controller;
-
-    // Data types used for the Chat Protocol
-    private static final String DATA_TYPE_CONNECT = "CONNECT";
-    private static final String DATA_TYPE_CONFIRM = "CONFIRM";
-    private static final String DATA_TYPE_DISCONNECT = "DISCONNECT";
-    private static final String DATA_TYPE_MESSAGE = "MESSAGE";
-    private static final String DATA_TYPE_ERROR = "ERROR";
-
-    public static final String USER_NONE = "";
-    public static final String USER_ALL = "*";
-
-    private String userName = USER_NONE;
+    public static final String USER_ALL = "*"; //TODO: ??
     private State state = NEW;
 
     enum State {
@@ -36,7 +22,7 @@ public class ClientConnectionHandler {
     public ClientConnectionHandler(NetworkHandler.NetworkConnection<String> connection,
                                    String userName,
                                    ChatWindowController controller)  {
-        this.connection = connection;
+        super(connection);
         this.userName = (userName == null || userName.isBlank())? USER_NONE : userName;
         this.controller = controller;
     }
@@ -88,96 +74,48 @@ public class ClientConnectionHandler {
     }
 
     private void processData(String data) {
-        try {
-            // parse data content
-            Scanner scanner = new Scanner(data);
-            String sender = null;
-            String reciever = null;
-            String type = null;
-            String payload = null;
-            if (scanner.hasNextLine()) {
-                sender = scanner.nextLine();
-            } else {
-                throw new ChatProtocolException("No Sender found");
-            }
-            if (scanner.hasNextLine()) {
-                reciever = scanner.nextLine();
-            } else {
-                throw new ChatProtocolException("No Reciever found");
-            }
-            if (scanner.hasNextLine()) {
-                type = scanner.nextLine();
-            } else {
-                throw new ChatProtocolException("No Type found");
-            }
-            if (scanner.hasNextLine()) {
-                payload = scanner.nextLine();
-            }
-            // dispatch operation based on type parameter
-            if (type.equals(DATA_TYPE_CONNECT)) {
-                System.err.println("Illegal connect request from server");
-            } else if (type.equals(DATA_TYPE_CONFIRM)) {
-                if (state == CONFIRM_CONNECT) {
-                    this.userName = reciever;
-                    controller.setUserName(userName);
-                    controller.setServerPort(connection.getRemotePort());
-                    controller.setServerAddress(connection.getRemoteHost());
-                    controller.writeInfo(payload);
-                    System.out.println("CONFIRM: " + payload);
-                    this.setState(CONNECTED);
-                } else if (state == CONFIRM_DISCONNECT) {
-                    controller.writeInfo(payload);
-                    System.out.println("CONFIRM: " + payload);
-                    this.setState(DISCONNECTED);
-                } else {
-                    System.err.println("Got unexpected confirm message: " + payload);
-                }
-            } else if (type.equals(DATA_TYPE_DISCONNECT)) {
-                if (state == DISCONNECTED) {
-                    System.out.println("DISCONNECT: Already in disconnected: " + payload);
-                    return;
-                }
+        parseData(data);
+        // dispatch operation based on type parameter
+        if (type.equals(DATA_TYPE_CONNECT)) {
+            System.err.println("Illegal connect request from server");
+        } else if (type.equals(DATA_TYPE_CONFIRM)) {
+            if (state == CONFIRM_CONNECT) {
+                this.userName = reciever;
+                controller.setUserName(userName);
+                controller.setServerPort(connection.getRemotePort());
+                controller.setServerAddress(connection.getRemoteHost());
                 controller.writeInfo(payload);
-                System.out.println("DISCONNECT: " + payload);
+                System.out.println("CONFIRM: " + payload);
+                this.setState(CONNECTED);
+            } else if (state == CONFIRM_DISCONNECT) {
+                controller.writeInfo(payload);
+                System.out.println("CONFIRM: " + payload);
                 this.setState(DISCONNECTED);
-            } else if (type.equals(DATA_TYPE_MESSAGE)) {
-                if (state != CONNECTED) {
-                    System.out.println("MESSAGE: Illegal state " + state + " for message: " + payload);
-                    return;
-                }
-                controller.writeMessage(sender, reciever, payload);
-                System.out.println("MESSAGE: From " + sender + " to " + reciever + ": "+  payload);
-            } else if (type.equals(DATA_TYPE_ERROR)) {
-                controller.writeError(payload);
-                System.out.println("ERROR: " + payload);
             } else {
-                System.out.println("Unknown data type received: " + type);
+                System.err.println("Got unexpected confirm message: " + payload);
             }
-        } catch (ChatProtocolException e) {
-            System.err.println("Error while processing data: " + e.getMessage());
-            sendData(USER_NONE, userName, DATA_TYPE_ERROR, e.getMessage());
+        } else if (type.equals(DATA_TYPE_DISCONNECT)) {
+            if (state == DISCONNECTED) {
+                System.out.println("DISCONNECT: Already in disconnected: " + payload);
+                return;
+            }
+            controller.writeInfo(payload);
+            System.out.println("DISCONNECT: " + payload);
+            this.setState(DISCONNECTED);
+        } else if (type.equals(DATA_TYPE_MESSAGE)) {
+            if (state != CONNECTED) {
+                System.out.println("MESSAGE: Illegal state " + state + " for message: " + payload);
+                return;
+            }
+            controller.writeMessage(sender, reciever, payload);
+            System.out.println("MESSAGE: From " + sender + " to " + reciever + ": " + payload);
+        } else if (type.equals(DATA_TYPE_ERROR)) {
+            controller.writeError(payload);
+            System.out.println("ERROR: " + payload);
+        } else {
+            System.out.println("Unknown data type received: " + type);
         }
-    }
 
-    public void sendData(String sender, String receiver, String type, String payload) {
-        if (connection.isAvailable()) {
-            new StringBuilder();
-            String data = new StringBuilder()
-                .append(sender+"\n")
-                .append(receiver+"\n")
-                .append(type+"\n")
-                .append(payload+"\n")
-                .toString();
-            try {
-                connection.send(data);
-            } catch (SocketException e) {
-                System.err.println("Connection closed: " + e.getMessage());
-            } catch (EOFException e) {
-                System.out.println("Connection terminated by remote");
-            } catch(IOException e) {
-                System.err.println("Communication error: " + e.getMessage());
-            }
-        }
     }
 
     public void connect() throws ChatProtocolException {
