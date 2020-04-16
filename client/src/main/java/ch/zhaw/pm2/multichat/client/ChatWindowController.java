@@ -4,6 +4,9 @@ import ch.zhaw.pm2.multichat.client.ClientConnectionHandler.State;
 import ch.zhaw.pm2.multichat.protocol.ChatProtocolException;
 import ch.zhaw.pm2.multichat.protocol.NetworkHandler;
 import javafx.application.Platform;
+import javafx.beans.property.StringPropertyBase;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -13,6 +16,7 @@ import javafx.scene.layout.Pane;
 import javafx.stage.WindowEvent;
 
 import java.io.IOException;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -24,6 +28,10 @@ public class ChatWindowController {
     private static final Logger logger = Logger.getLogger(ChatWindowController.class.getCanonicalName());
     private final Pattern messagePattern = Pattern.compile( "^(?:@(\\w*))?\\s*(.*)$" );
     private ClientConnectionHandler connectionHandler;
+    private ArrayBlockingQueue<String> queue;
+    private ObservableValue<StringPropertyBase> data;
+
+
 
     private WindowCloseHandler windowCloseHandler = new WindowCloseHandler();
 
@@ -108,11 +116,20 @@ public class ChatWindowController {
         String serverAddress = serverAddressField.getText();
         int serverPort = Integer.parseInt(serverPortField.getText());
         connectionHandler = new ClientConnectionHandler(
-            NetworkHandler.openConnection(serverAddress, serverPort), userName,
-            this);
-        connectionHandler.startReceiving();
+            NetworkHandler.openConnection(serverAddress, serverPort), userName, this);
         // register window close handler
         rootPane.getScene().getWindow().addEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, windowCloseHandler);
+        connectionHandler.subscribeMessage(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observableValue, String oldValue, String newValue) {
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        messageArea.appendText(newValue);
+                    }
+                });
+            }
+        });
     }
 
     private void terminateConnectionHandler() {

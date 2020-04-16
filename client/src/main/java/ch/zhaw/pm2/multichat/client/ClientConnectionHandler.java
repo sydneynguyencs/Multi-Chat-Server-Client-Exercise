@@ -3,21 +3,24 @@ package ch.zhaw.pm2.multichat.client;
 import ch.zhaw.pm2.multichat.protocol.ChatProtocolException;
 import ch.zhaw.pm2.multichat.protocol.ConnectionHandler;
 import ch.zhaw.pm2.multichat.protocol.NetworkHandler;
+import javafx.beans.property.StringPropertyBase;
 
+import javafx.beans.value.ChangeListener;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketException;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import static ch.zhaw.pm2.multichat.client.ClientConnectionHandler.State.*;
 
-public class ClientConnectionHandler extends ConnectionHandler {
+public class ClientConnectionHandler extends ConnectionHandler{
     private final ChatWindowController controller;
     public static final String USER_ALL = "*"; //TODO: ??
     private State state = NEW;
-
-    enum State {
-        NEW, CONFIRM_CONNECT, CONNECTED, CONFIRM_DISCONNECT, DISCONNECTED;
-    }
+    private ArrayBlockingQueue<String> queue;
+    private StringPropertyBase observableMessage;
+    private Thread senderThread;
+    private Thread receiverThread;
 
     public ClientConnectionHandler(NetworkHandler.NetworkConnection<String> connection,
                                    String userName,
@@ -25,6 +28,38 @@ public class ClientConnectionHandler extends ConnectionHandler {
         super(connection);
         this.userName = (userName == null || userName.isBlank())? USER_NONE : userName;
         this.controller = controller;
+        queue = new ArrayBlockingQueue<>(10000);
+        observableMessage = new StringPropertyBase() {
+            @Override
+            public Object getBean() {
+                return null;
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        };
+        senderThread = new Thread() {
+            @Override
+            public void run() {
+            }
+        };
+        receiverThread = new Thread() {
+            @Override
+            public void run() {
+                startReceiving();
+
+            }
+        };
+        senderThread.start();
+        receiverThread.start();
+
+
+    }
+
+    enum State {
+        NEW, CONFIRM_CONNECT, CONNECTED, CONFIRM_DISCONNECT, DISCONNECTED;
     }
 
     public State getState() {
@@ -73,6 +108,10 @@ public class ClientConnectionHandler extends ConnectionHandler {
         System.out.println("Closed Connection Handler to Server");
     }
 
+    public void subscribeMessage(ChangeListener<? super String> listener){
+        observableMessage.addListener(listener);
+    }
+
     private void processData(String data) {
         parseData(data);
         // dispatch operation based on type parameter
@@ -84,11 +123,15 @@ public class ClientConnectionHandler extends ConnectionHandler {
                 controller.setUserName(userName);
                 controller.setServerPort(connection.getRemotePort());
                 controller.setServerAddress(connection.getRemoteHost());
-                controller.writeInfo(payload);
+                //controller.writeInfo(payload);
+                String writtenMessage = String.format("[INFO] %s\n", payload);
+                observableMessage.set(writtenMessage);
                 System.out.println("CONFIRM: " + payload);
                 this.setState(CONNECTED);
             } else if (state == CONFIRM_DISCONNECT) {
-                controller.writeInfo(payload);
+                //controller.writeInfo(payload);
+                String writtenMessage = String.format("[INFO] %s\n", payload);
+                observableMessage.set(writtenMessage);
                 System.out.println("CONFIRM: " + payload);
                 this.setState(DISCONNECTED);
             } else {
@@ -99,7 +142,9 @@ public class ClientConnectionHandler extends ConnectionHandler {
                 System.out.println("DISCONNECT: Already in disconnected: " + payload);
                 return;
             }
-            controller.writeInfo(payload);
+            //controller.writeInfo(payload);
+            String writtenMessage = String.format("[INFO] %s\n", payload);
+            observableMessage.set(writtenMessage);
             System.out.println("DISCONNECT: " + payload);
             this.setState(DISCONNECTED);
         } else if (type.equals(DATA_TYPE_MESSAGE)) {
@@ -107,10 +152,14 @@ public class ClientConnectionHandler extends ConnectionHandler {
                 System.out.println("MESSAGE: Illegal state " + state + " for message: " + payload);
                 return;
             }
-            controller.writeMessage(sender, reciever, payload);
+            //controller.writeMessage(sender, reciever, payload); // TODO: must be on UI thread
+            String writtenMessage = String.format("[%s -> %s] %s\n", sender, reciever, payload);
+            observableMessage.set(writtenMessage);
             System.out.println("MESSAGE: From " + sender + " to " + reciever + ": " + payload);
         } else if (type.equals(DATA_TYPE_ERROR)) {
-            controller.writeError(payload);
+            //controller.writeError(payload);
+            String writtenMessage = String.format(String.format("[ERROR] %s\n", payload));
+            observableMessage.set(writtenMessage);
             System.out.println("ERROR: " + payload);
         } else {
             System.out.println("Unknown data type received: " + type);

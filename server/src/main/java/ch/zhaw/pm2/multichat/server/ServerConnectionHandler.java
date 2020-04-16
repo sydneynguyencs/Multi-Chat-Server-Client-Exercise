@@ -20,6 +20,7 @@ public class ServerConnectionHandler extends ConnectionHandler {
 
     private String userName = "Anonymous-"+connectionId;
     private State state = NEW;
+    private Thread serverThread;
 
     enum State {
         NEW, CONNECTED, DISCONNECTED;
@@ -31,6 +32,14 @@ public class ServerConnectionHandler extends ConnectionHandler {
         Objects.requireNonNull(connection, "Connection must not be null");
         Objects.requireNonNull(registry, "Registry must not be null");
         this.connectionRegistry = registry;
+        serverThread = new Thread() {
+            @Override
+            public void run() {
+                startReceiving();
+            }
+        };
+        serverThread.start();
+
     }
 
     public String getUserName() {
