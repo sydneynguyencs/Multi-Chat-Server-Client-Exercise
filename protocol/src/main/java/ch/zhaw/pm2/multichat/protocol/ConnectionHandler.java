@@ -30,8 +30,8 @@ public abstract class ConnectionHandler {
     protected String payload = null;
 
     /**
-     *
-     * @param connection
+     *The constructor of the class.
+     * @param connection is a NetworConnection that gets saved
      */
     public ConnectionHandler(NetworkHandler.NetworkConnection<String> connection) {
         this.connection = connection;
@@ -72,10 +72,10 @@ public abstract class ConnectionHandler {
 
     /**
      * Sends data if the connection is available. The data will be built to String.
-     * @param sender    User at one end of the server port
-     * @param receiver  User at the same server port
-     * @param type      Type of input
-     * @param payload   Message that is send from user input
+     * @param sender             User at one end of the server port
+     * @param receiver           User at the same server port
+     * @param type               Type of input
+     * @param payload            Message that is send from user input
      */
     public void sendData(String sender, String receiver, String type, String payload) {
         if (connection.isAvailable()) {
@@ -127,6 +127,7 @@ public abstract class ConnectionHandler {
 
     /**
      * Stops receiving messages and cloeses the connection handler.
+     * @throws IOException  Message that is send from user input
      */
     public void stopReceiving() {
         try {
@@ -139,9 +140,30 @@ public abstract class ConnectionHandler {
         closeConnectionHandler();
         }
 
+     /**
+     * Processes user inputs depending on the data type.
+     * @param data  user inputs
+     */
     abstract public  void processData(String data);
+
+     /**
+     * Starts connection handler with user specified message.
+     */
     abstract public  void startConnectionHandler();
+
+    /**
+     * Stops connection handler with user specified message.
+     */
     abstract public  void stopConnectionHandler();
+
+     /**
+     * Stops connection handler with user specified message.
+     */
     abstract public  void closeConnectionHandler();
+
+    /**
+     * Handles unregistered connection handler
+     * @param e exception thrown with warning message
+     */
     abstract public  void unregisteredConnectionHandler(Exception e);
 }

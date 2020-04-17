@@ -13,8 +13,7 @@ import java.util.logging.Logger;
 /**
  * The server creates a NetworkServer instance and a port on all available interfaces
  * (IP networks, including localhost loopback) of the current host is created and opened.
- * As soon as the server is ready to receive requests it calls the method {@link NetworkHandler#waitForConnection()}
- * which is blocking and waiting for client to open a connection.
+ * As soon as the server is ready to receive requests it blocks and waits for client to open a connection.
  */
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getCanonicalName());

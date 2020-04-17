@@ -12,8 +12,6 @@ import static ch.zhaw.pm2.multichat.client.ClientConnectionHandler.State.*;
 
 /**
  * This class implements the communication protocol on client side.
- *
- *
  */
 public class ClientConnectionHandler extends ConnectionHandler {
     public static final String USER_ALL = "*"; //TODO: ??
@@ -92,11 +90,11 @@ public class ClientConnectionHandler extends ConnectionHandler {
         receiverThread.interrupt();
     }
 
-    @Override
     /**
      * Handles unregistered connection handler
      * @param e exception thrown with warning message
      */
+     @Override
     public void unregisteredConnectionHandler(Exception e) {
         logger.log(Level.WARNING, "Unregistered because connection terminated {0}", e.getMessage());
     }
@@ -107,6 +105,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
     public void subscribeMessage(ChangeListener<? super String> listener){
         observableMessage.addListener(listener);
     }
+
     /**
      * Subscribes changes of users from user input.
      */
@@ -224,7 +223,6 @@ public class ClientConnectionHandler extends ConnectionHandler {
      * Connects to server.
      * Sends data of user input.
      * Sets the state of the connection
-     * @throws ChatProtocolException
      */
     public void connect() throws ChatProtocolException {
         if (state != NEW) throw new ChatProtocolException("Illegal state for connect: " + state);
@@ -236,7 +234,6 @@ public class ClientConnectionHandler extends ConnectionHandler {
      * Disconnects to server.
      * Sends data of user input.
      * Sets the state of the connection
-     * @throws ChatProtocolException
      */
     public void disconnect() throws ChatProtocolException {
         if (state != NEW && state != CONNECTED) throw new ChatProtocolException("Illegal state for disconnect: " + state);
