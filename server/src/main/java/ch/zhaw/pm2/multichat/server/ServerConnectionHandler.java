@@ -48,21 +48,26 @@ public class ServerConnectionHandler extends ConnectionHandler {
         return this.userName;
     }
 
+    @Override
     public void startConnectionHandler() {
         logger.log(Level.INFO, "Starting Connection Handler for {0}", userName);
     }
 
+    @Override
     public void stopConnectionHandler() {
         logger.log(Level.INFO, "Stopping Connection Handler for {0}", userName);
     }
 
+    @Override
     public void closeConnectionHandler(){ logger.log(Level.INFO, "Starting Connection Handler for {0}", userName); }
 
+    @Override
     public void unregisteredConnectionHandler(Exception e) {
         connectionRegistry.remove(userName);
         logger.log(Level.INFO, "Unregistered because client connection terminated: {0}, {1}",new Object[]{userName, e.getMessage()});
     }
 
+    @Override
     public void processData(String data)  {
         try {
             parseData(data);

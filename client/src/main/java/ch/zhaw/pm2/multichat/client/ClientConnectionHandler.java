@@ -101,18 +101,22 @@ public class ClientConnectionHandler extends ConnectionHandler {
         controller.stateChanged(newState);
     }
 
+    @Override
     public void startConnectionHandler() {
         logger.info("Starting Connection Handler");
     }
 
+    @Override
     public void stopConnectionHandler() {
         logger.info("Stopped Connection Handler");
     }
 
+    @Override
     public void closeConnectionHandler() {
         logger.info("Closing Connection Handler to Server");
     }
 
+    @Override
     public void unregisteredConnectionHandler(Exception e) {
         logger.log(Level.WARNING, "Unregistered because connection terminated {0}", e.getMessage());
     }
@@ -133,6 +137,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
         observableServerPort.addListener(listener);
     }
 
+    @Override
     public void processData(String data) {
         parseData(data);
         // dispatch operation based on type parameter
