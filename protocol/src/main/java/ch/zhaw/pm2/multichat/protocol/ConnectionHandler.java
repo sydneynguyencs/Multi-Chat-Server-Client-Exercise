@@ -40,6 +40,7 @@ public abstract class ConnectionHandler {
     /**
      * Reads the data from user input.
      * @param data user input when starting the connection
+     * @throws ChatProtocolException if there are is an error while processing the data
      */
     protected void parseData(String data) {
         Scanner scanner = new Scanner(data);
@@ -76,6 +77,9 @@ public abstract class ConnectionHandler {
      * @param receiver           User at the same server port
      * @param type               Type of input
      * @param payload            Message that is send from user input
+     * @throws SocketException   if there is a communication error
+     * @throws EOFException      has been reached unexpectedly during input.
+     * @throws IOException
      */
     public void sendData(String sender, String receiver, String type, String payload) {
         if (connection.isAvailable()) {
@@ -101,6 +105,10 @@ public abstract class ConnectionHandler {
     /**
      * Starts receiving messages from other users.
      * Starts the connection handler and processes the data that is send.
+     * @throws SocketException            if there is a communication error
+     * @throws EOFException               has been reached unexpectedly during input.
+     * @throws IOException
+     * @throws ClassNotFoundException
      */
     public void startReceiving(){
         startConnectionHandler();
