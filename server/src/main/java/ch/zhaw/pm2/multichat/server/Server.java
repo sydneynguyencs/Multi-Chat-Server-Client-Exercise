@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 /**
  * The server creates a NetworkServer instance and a port on all available interfaces
  * (IP networks, including localhost loopback) of the current host is created and opened.
- * As soon as the server is ready to receive requests it calls the method {@link NetworkServer#waitForConnection()}
+ * As soon as the server is ready to receive requests it calls the method {@link NetworkHandler#waitForConnection()}
  * which is blocking and waiting for client to open a connection.
  */
 public class Server {
@@ -88,6 +88,8 @@ public class Server {
 
     /**
      * This method creates a new server and listens to incoming new network connections and connects them.
+     * @throws SocketException if the server connection has been terminated
+     * @throws IOException if there is a communication error
      */
     private void start() {
         logger.info("Server started.");
@@ -113,6 +115,7 @@ public class Server {
 
     /**
      * This method closes the server.
+     * @throws IOException  if there is a communication error
      */
     public void terminate() {
         try {
