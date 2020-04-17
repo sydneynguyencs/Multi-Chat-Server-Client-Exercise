@@ -10,6 +10,17 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
+/**
+ * The server creates a NetworkServer instance and a port on all available interfaces
+ * (IP networks, including localhost loopback) of the current host is created and opened.
+ * As soon as the server is ready to receive requests it calls the method {@link NetworkServer#waitForConnection()}
+ * which is blocking and waiting for client to open a connection.
+ */
+
+/**<li>The server creates a {@link NetworkServer} instance using the factory method
+        *     {@link NetworkHandler#createServer(int port)}. This creates and opens a port (range: 0 - 65535)
+        *     on all available interfaces (IP-networks, incl. localhost loopback) of the current host.</li>
+        *     <li></li>*/
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getCanonicalName());
 
@@ -67,6 +78,11 @@ public class Server {
         }
     }
 
+    /**
+     * Constructor of server.
+     * @param  serverPort where to listen
+     * @throws IOException if the port is already in use
+     */
     public Server(int serverPort) throws IOException {
         logger.setLevel(Level.ALL);
         // Open server connection
@@ -75,13 +91,15 @@ public class Server {
         logger.info("Listening on " + networkServer.getHostAddress() + ":" + networkServer.getHostPort());
     }
 
+    /**
+     * This method creates a new server and listens to incoming new network connections and connects them.
+     */
     private void start() {
         logger.info("Server started.");
         try {
             while (true) {
                  NetworkHandler.NetworkConnection<String> connection = networkServer.waitForConnection();
                  ServerConnectionHandler connectionHandler = new ServerConnectionHandler(connection, connections);
-                 //connectionHandler.startReceiving();
                  logger.info(String.format("Connected new Client %s with IP:Port <%s:%d>",
                      connectionHandler.getUserName(),
                      connection.getRemoteHost(),
@@ -98,6 +116,9 @@ public class Server {
         logger.info("Server Stopped.");
     }
 
+    /**
+     * This method closes the server.
+     */
     public void terminate() {
         try {
             logger.info("Close server port.");
