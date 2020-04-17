@@ -151,7 +151,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
             //controller.writeMessage(sender, reciever, payload); // TODO: must be on UI thread
             String writtenMessage = String.format("[%s -> %s] %s\n", sender, reciever, payload);
             observableMessage.set(writtenMessage);
-            logger.severe("MESSAGE: From " + sender + " to " + reciever + ": " + payload);
+            logger.info("MESSAGE: From " + sender + " to " + reciever + ": " + payload);
         } else if (type.equals(DATA_TYPE_ERROR)) {
             //controller.writeError(payload);
             String writtenMessage = String.format(String.format("[ERROR] %s\n", payload));
