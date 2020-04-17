@@ -131,7 +131,7 @@ public class ChatWindowController {
         }
     }
 
-    public void stateChanged(State newState) {
+    private void stateChanged(State newState) {
         // update UI (need to be run in UI thread: see Platform.runLater())
         Platform.runLater(new Runnable() {
             @Override
@@ -143,7 +143,8 @@ public class ChatWindowController {
             terminateConnectionHandler();
         }
     }
-    public void subscribeState(){
+
+    private void subscribeState(){
         connectionHandler.subscribeState(new ChangeListener<>() {
             @Override
             public void changed(ObservableValue<? extends State> observableValue, State oldState, State newState) {

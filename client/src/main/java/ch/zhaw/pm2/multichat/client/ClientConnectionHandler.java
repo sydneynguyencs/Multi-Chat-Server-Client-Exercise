@@ -4,7 +4,6 @@ import ch.zhaw.pm2.multichat.protocol.ChatProtocolException;
 import ch.zhaw.pm2.multichat.protocol.ConnectionHandler;
 import ch.zhaw.pm2.multichat.protocol.NetworkHandler;
 import javafx.beans.property.*;
-
 import javafx.beans.value.ChangeListener;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
@@ -14,7 +13,7 @@ import static ch.zhaw.pm2.multichat.client.ClientConnectionHandler.State.*;
  * This class implements the communication protocol on client side.
  */
 public class ClientConnectionHandler extends ConnectionHandler {
-    public static final String USER_ALL = "*"; //TODO: ??
+    public static final String USER_ALL = "*";
     private State state = NEW;
     private LinkedBlockingQueue<Message> queue;
     private StringPropertyBase observableMessage;
