@@ -214,6 +214,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
                 }
             }
         }
+    }
       
     private void processDataTypeConnect(){
         logger.warning("Illegal connect request from server");
