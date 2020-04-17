@@ -223,7 +223,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
      * Connects to server.
      * Sends data of user input.
      * Sets the state of the connection
-     * @throws ChatProtocolException
+     * @throws ChatProtocolException Thrown n case of an illegal state for connect
      */
     public void connect() throws ChatProtocolException {
         if (state != NEW) throw new ChatProtocolException("Illegal state for connect: " + state);
@@ -235,7 +235,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
      * Disconnects to server.
      * Sends data of user input.
      * Sets the state of the connection
-     * @throws ChatProtocolException
+     * @throws ChatProtocolException Thrown n case of an illegal state for disconnect
      */
     public void disconnect() throws ChatProtocolException {
         if (state != NEW && state != CONNECTED) throw new ChatProtocolException("Illegal state for disconnect: " + state);
@@ -252,7 +252,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
      * Post message and puts it into a queue.
      * @param receiver Recipient of the chat
      * @param message Message from the User which is the sender
-     * @throws InterruptedException
+     * @throws InterruptedException Thrown when interrupted.
      */
     public void postMessage(String receiver, String message) {
         try {

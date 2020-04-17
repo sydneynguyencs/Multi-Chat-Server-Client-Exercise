@@ -47,7 +47,7 @@ public class ChatWindowController {
     }
 
     /**
-     * Initialisation
+     * Initialisation of the server attributes
      */
     @FXML
     public void initialize() {
@@ -218,8 +218,5 @@ public class ChatWindowController {
         }
 
     }
-
-
-
 
 }

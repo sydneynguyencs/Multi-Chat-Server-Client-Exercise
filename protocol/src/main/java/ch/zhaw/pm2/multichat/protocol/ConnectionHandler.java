@@ -78,8 +78,8 @@ public abstract class ConnectionHandler {
      * @param type               Type of input
      * @param payload            Message that is send from user input
      * @throws SocketException   if there is a communication error
-     * @throws EOFException      has been reached unexpectedly during input.
-     * @throws IOException
+     * @throws EOFException      has been reached unexpectedly during input
+     * @throws IOException       when input or output is not expected
      */
     public void sendData(String sender, String receiver, String type, String payload) {
         if (connection.isAvailable()) {
@@ -107,8 +107,8 @@ public abstract class ConnectionHandler {
      * Starts the connection handler and processes the data that is send.
      * @throws SocketException            if there is a communication error
      * @throws EOFException               has been reached unexpectedly during input.
-     * @throws IOException
-     * @throws ClassNotFoundException
+     * @throws IOException                when input or output is not expected
+     * @throws ClassNotFoundException     in case class is not foung
      */
     public void startReceiving(){
         startConnectionHandler();
