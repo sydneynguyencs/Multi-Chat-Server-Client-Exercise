@@ -81,7 +81,7 @@ public class Server {
             while (true) {
                  NetworkHandler.NetworkConnection<String> connection = networkServer.waitForConnection();
                  ServerConnectionHandler connectionHandler = new ServerConnectionHandler(connection, connections);
-                 connectionHandler.startReceiving();
+                 //connectionHandler.startReceiving();
                  logger.info(String.format("Connected new Client %s with IP:Port <%s:%d>",
                      connectionHandler.getUserName(),
                      connection.getRemoteHost(),
