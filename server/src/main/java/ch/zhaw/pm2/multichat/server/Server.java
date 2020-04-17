@@ -16,11 +16,6 @@ import java.util.logging.Logger;
  * As soon as the server is ready to receive requests it calls the method {@link NetworkServer#waitForConnection()}
  * which is blocking and waiting for client to open a connection.
  */
-
-/**<li>The server creates a {@link NetworkServer} instance using the factory method
-        *     {@link NetworkHandler#createServer(int port)}. This creates and opens a port (range: 0 - 65535)
-        *     on all available interfaces (IP-networks, incl. localhost loopback) of the current host.</li>
-        *     <li></li>*/
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getCanonicalName());
 
