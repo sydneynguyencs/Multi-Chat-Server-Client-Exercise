@@ -34,8 +34,8 @@ public class ConnectionHandler {
 
 
     public void parseData(String data) {
+        Scanner scanner = new Scanner(data);
         try {
-            Scanner scanner = new Scanner(data);
             if (scanner.hasNextLine()) {
                 sender = scanner.nextLine();
             } else {
@@ -57,6 +57,8 @@ public class ConnectionHandler {
         } catch (ChatProtocolException e) {
             logger.info("Error while processing data" + e.getMessage());
             sendData(USER_NONE, userName, DATA_TYPE_ERROR, e.getMessage());
+        } finally {
+            scanner.close();
         }
     }
 
