@@ -9,14 +9,18 @@ import javafx.stage.Stage;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * This class loads the FXML for the client GUI.
+ */
 public class ClientUI extends Application {
 
+
+    /**
+     * This method starts the GUI.     *
+     * @param primaryStage the primary stage defined by FXML
+     */
     @Override
     public void start(Stage primaryStage) {
-        chatWindow(primaryStage);
-    }
-
-    private void chatWindow(Stage primaryStage) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("ChatWindow.fxml"));
             Pane rootPane = loader.load();
