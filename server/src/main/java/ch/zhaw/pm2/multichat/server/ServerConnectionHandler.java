@@ -83,9 +83,24 @@ public class ServerConnectionHandler extends ConnectionHandler {
         logger.info("Closed Connection Handler for " + userName);
     }
 
+    public void startConnectionHandler() {
+        logger.info("Starting Connection Handler for " + userName);
+    }
 
+    public void stopConnectionHandler() {
+        logger.info("Stopping Connection Handler for " + userName);
+    }
 
-    private void processData(String data)  {
+    public void closeConnectionHandler() {
+        logger.info("Closing Connection Handler for " + userName);
+    }
+
+    public void unregisteredConnectionHandler(Exception e) {
+        connectionRegistry.remove(userName);
+        logger.info("Unregistered because client connection terminated: " + userName + " " + e.getMessage());
+    }
+
+    public void processData(String data)  {
         try {
             parseData(data);
             // dispatch operation based on type parameter

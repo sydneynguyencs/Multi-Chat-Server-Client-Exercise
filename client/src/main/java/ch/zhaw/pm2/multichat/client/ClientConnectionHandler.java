@@ -67,48 +67,27 @@ public class ClientConnectionHandler extends ConnectionHandler {
         controller.stateChanged(newState);
     }
 
-    public void startReceiving() {
+    public void startConnectionHandler() {
         logger.info("Starting Connection Handler");
-        try {
-            logger.info("Start receiving data...");
-            while (connection.isAvailable()) {
-                String data = connection.receive();
-                processData(data);
-            }
-            logger.info("Stopped recieving data");
-        } catch (SocketException e) {
-            logger.info("Connection terminated locally");
-            this.setState(DISCONNECTED);
-            logger.warning("Unregistered because connection terminated" + e.getMessage());
-        } catch (EOFException e) {
-            logger.info("Connection terminated by remote");
-            this.setState(DISCONNECTED);
-            logger.warning("Unregistered because connection terminated" + e.getMessage());
-        } catch(IOException e) {
-            logger.warning("Communication error" + e);
-        } catch(ClassNotFoundException e) {
-            logger.warning("Received object of unknown type" + e.getMessage());
-        }
+    }
+
+    public void stopConnectionHandler() {
         logger.info("Stopped Connection Handler");
     }
 
-    public void stopReceiving() {
+    public void closeConnectionHandler() {
         logger.info("Closing Connection Handler to Server");
-        try {
-            logger.info("Stop receiving data...");
-            connection.close();
-            logger.info("Stopped receiving data.");
-        } catch (IOException e) {
-            logger.warning("Failed to close connection." + e.getMessage());
-        }
-        logger.info("Closed Connection Handler to Server");
+    }
+
+    public void unregisteredConnectionHandler(Exception e) {
+        logger.warning("Unregistered because connection terminated" + e.getMessage());
     }
 
     public void subscribeMessage(ChangeListener<? super String> listener){
         observableMessage.addListener(listener);
     }
 
-    private void processData(String data) {
+    public void processData(String data) {
         parseData(data);
         // dispatch operation based on type parameter
         if (type.equals(DATA_TYPE_CONNECT)) {
@@ -156,9 +135,9 @@ public class ClientConnectionHandler extends ConnectionHandler {
             //controller.writeError(payload);
             String writtenMessage = String.format(String.format("[ERROR] %s\n", payload));
             observableMessage.set(writtenMessage);
-            logger.severe("ERROR: " + payload);
+            logger.warning("ERROR: " + payload);
         } else {
-            logger.severe("Unknown data type received: " + type);
+            logger.warning("Unknown data type received: " + type);
         }
     }
 

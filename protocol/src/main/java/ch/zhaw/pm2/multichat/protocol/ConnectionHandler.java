@@ -76,12 +76,50 @@ public abstract class ConnectionHandler {
             } catch (SocketException e) {
                 logger.severe("Connection closed: " + e.getMessage());
             } catch (EOFException e) {
-                logger.warning("Connection terminated by remote");
+                logger.severe("Connection terminated by remote");
             } catch(IOException e) {
                 logger.severe("Communication error: " + e.getMessage());
             }
         }
     }
-    abstract public void startReceiving();
-    abstract public void stopReceiving();
+    public void startReceiving(){
+        startConnectionHandler();
+        try {
+            logger.info("Start receiving data...");
+            while (connection.isAvailable()) {
+                String data = connection.receive();
+                processData(data);
+            }
+            logger.info("Stopped recieving data");
+        } catch (SocketException e) {
+            logger.info("Connection terminated locally");
+            unregisteredConnectionHandler(e);
+        } catch (EOFException e) {
+            logger.info("Connection terminated by remote");
+            unregisteredConnectionHandler(e);
+        } catch(IOException e) {
+            logger.warning("Communication error: " + e);
+        } catch(ClassNotFoundException e) {
+            logger.warning("Received object of unknown type: " + e.getMessage());
+        }
+        stopConnectionHandler();
+    }
+
+    public void stopReceiving() {
+        closeConnectionHandler();
+        try {
+            logger.info("Stop receiving data...");
+            connection.close();
+            logger.info("Stopped receiving data.");
+        } catch (IOException e) {
+            logger.warning("Failed to close connection." + e.getMessage());
+        }
+        closeConnectionHandler();
+        }
+
+    abstract public  void processData(String data);
+    abstract public  void startConnectionHandler();
+    abstract public  void stopConnectionHandler();
+    abstract public  void closeConnectionHandler();
+    abstract public  void unregisteredConnectionHandler(Exception e);
 }
