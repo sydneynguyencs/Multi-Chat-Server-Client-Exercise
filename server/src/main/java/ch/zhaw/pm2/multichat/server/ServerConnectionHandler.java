@@ -3,18 +3,15 @@ package ch.zhaw.pm2.multichat.server;
 import ch.zhaw.pm2.multichat.protocol.ChatProtocolException;
 import ch.zhaw.pm2.multichat.protocol.ConnectionHandler;
 import ch.zhaw.pm2.multichat.protocol.NetworkHandler;
-
-import java.io.EOFException;
-import java.io.IOException;
-import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import static ch.zhaw.pm2.multichat.server.ServerConnectionHandler.State.*;
 
+/**
+ * This class contains the implementation of the communication protocol on server side.
+ */
 public class ServerConnectionHandler extends ConnectionHandler {
     private static final AtomicInteger connectionCounter = new AtomicInteger(0);
     private final int connectionId = connectionCounter.incrementAndGet();
@@ -22,7 +19,6 @@ public class ServerConnectionHandler extends ConnectionHandler {
 
     private String userName = "Anonymous-"+connectionId;
     private State state = NEW;
-    private Thread serverThread;
 
     enum State {
         NEW, CONNECTED, DISCONNECTED;
@@ -34,7 +30,7 @@ public class ServerConnectionHandler extends ConnectionHandler {
         Objects.requireNonNull(connection, "Connection must not be null");
         Objects.requireNonNull(registry, "Registry must not be null");
         this.connectionRegistry = registry;
-        serverThread = new Thread() {
+        Thread serverThread = new Thread() {
             @Override
             public void run() {
                 startReceiving();
@@ -48,21 +44,39 @@ public class ServerConnectionHandler extends ConnectionHandler {
         return this.userName;
     }
 
+    /**
+     * Starts connection handler with user specified message.
+     */
     public void startConnectionHandler() {
         logger.log(Level.INFO, "Starting Connection Handler for {0}", userName);
     }
 
+    /**
+     * Stops connection handler with user specified message.
+     */
     public void stopConnectionHandler() {
         logger.log(Level.INFO, "Stopping Connection Handler for {0}", userName);
     }
 
+    /**
+     * Closes connection handler with user specified message.
+     */
     public void closeConnectionHandler(){ logger.log(Level.INFO, "Starting Connection Handler for {0}", userName); }
 
+    /**
+     * Handles unregistered connection handler.
+     * Removes user name from registry.
+     * @param e exception thrown with warning message
+     */
     public void unregisteredConnectionHandler(Exception e) {
         connectionRegistry.remove(userName);
         logger.log(Level.INFO, "Unregistered because client connection terminated: {0}, {1}",new Object[]{userName, e.getMessage()});
     }
 
+    /**
+     * Processes user inputs depending on the data type.
+     * @param data  user inputs
+     */
     public void processData(String data)  {
         try {
             parseData(data);

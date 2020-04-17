@@ -8,9 +8,10 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
+/**
+ * Abstract class that contains data fields and methods that are needed for the connection handler functions.
+ */
 public abstract class ConnectionHandler {
-    // Data types used for the Chat Protocol
     protected final NetworkHandler.NetworkConnection<String> connection;
     protected static final Logger logger = Logger.getLogger(ConnectionHandler.class.getCanonicalName());
     protected static final String DATA_TYPE_CONNECT = "CONNECT";
@@ -28,13 +29,19 @@ public abstract class ConnectionHandler {
     protected String type = null;
     protected String payload = null;
 
-
+    /**
+     *
+     * @param connection
+     */
     public ConnectionHandler(NetworkHandler.NetworkConnection<String> connection) {
         this.connection = connection;
     }
 
-
-    public void parseData(String data) {
+    /**
+     * Reads the data from user input.
+     * @param data user input when starting the connection
+     */
+    protected void parseData(String data) {
         Scanner scanner = new Scanner(data);
         try {
             if (scanner.hasNextLine()) {
@@ -63,6 +70,13 @@ public abstract class ConnectionHandler {
         }
     }
 
+    /**
+     * Sends data if the connection is available. The data will be built to String.
+     * @param sender    User at one end of the server port
+     * @param receiver  User at the same server port
+     * @param type      Type of input
+     * @param payload   Message that is send from user input
+     */
     public void sendData(String sender, String receiver, String type, String payload) {
         if (connection.isAvailable()) {
             new StringBuilder();
@@ -83,6 +97,11 @@ public abstract class ConnectionHandler {
             }
         }
     }
+
+    /**
+     * Starts receiving messages from other users.
+     * Starts the connection handler and processes the data that is send.
+     */
     public void startReceiving(){
         startConnectionHandler();
         try {
@@ -106,8 +125,11 @@ public abstract class ConnectionHandler {
         stopConnectionHandler();
     }
 
+    /**
+     * Stops receiving messages and cloeses the connection handler.
+     */
     public void stopReceiving() {
-        closeConnectionHandler();
+        //closeConnectionHandler();
         try {
             logger.info("Stop receiving data...");
             connection.close();

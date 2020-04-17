@@ -4,7 +4,6 @@ import ch.zhaw.pm2.multichat.client.ClientConnectionHandler.State;
 import ch.zhaw.pm2.multichat.protocol.ChatProtocolException;
 import ch.zhaw.pm2.multichat.protocol.NetworkHandler;
 import javafx.application.Platform;
-import javafx.beans.property.StringPropertyBase;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
@@ -14,9 +13,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
 import javafx.stage.WindowEvent;
-
 import java.io.IOException;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -24,12 +21,15 @@ import java.util.regex.Pattern;
 
 import static ch.zhaw.pm2.multichat.client.ClientConnectionHandler.State.*;
 
+/**
+ * Class which is the GUI component for the chat window.
+ * It is the JavaFX Application and has the controller role.
+ */
+
 public class ChatWindowController {
     private static final Logger logger = Logger.getLogger(ChatWindowController.class.getCanonicalName());
     private final Pattern messagePattern = Pattern.compile( "^(?:@(\\w*))?\\s*(.*)$" );
     private ClientConnectionHandler connectionHandler;
-    private ArrayBlockingQueue<String> queue;
-    private ObservableValue<StringPropertyBase> data;
 
     private WindowCloseHandler windowCloseHandler = new WindowCloseHandler();
 
@@ -46,11 +46,15 @@ public class ChatWindowController {
         logger.setLevel(Level.ALL);
     }
 
+    /**
+     * Initialisation
+     */
     @FXML
     public void initialize() {
         serverAddressField.setText(NetworkHandler.DEFAULT_ADDRESS.getCanonicalHostName());
         serverPortField.setText(String.valueOf(NetworkHandler.DEFAULT_PORT));
         stateChanged(NEW);
+        //connectionHandler.setState(NEW);
     }
 
     private void applicationClose() {
@@ -61,7 +65,6 @@ public class ChatWindowController {
     private void toggleConnection () {
         if (connectionHandler == null || connectionHandler.getState() != CONNECTED) {
             connect();
-
         } else {
             disconnect();
         }
@@ -71,7 +74,6 @@ public class ChatWindowController {
         try {
             startConnectionHandler();
             connectionHandler.connect();
-            //connectionHandler.postConnection(true);
         } catch(IOException | ChatProtocolException e) {
             writeError(e.getMessage());
         }
@@ -84,7 +86,6 @@ public class ChatWindowController {
         }
         try {
             connectionHandler.disconnect();
-            //connectionHandler.postConnection(false);
         } catch (ChatProtocolException e) {
             writeError(e.getMessage());
         }
@@ -113,18 +114,16 @@ public class ChatWindowController {
         String serverAddress = serverAddressField.getText();
         int serverPort = Integer.parseInt(serverPortField.getText());
         connectionHandler = new ClientConnectionHandler(
-            NetworkHandler.openConnection(serverAddress, serverPort), userName, this);
-        // register window close handler
-        //connectionHandler.startReceiving();
-        userMessage();
-        setUserName();
-        setServerAddress();
-        setServerPort();
+            NetworkHandler.openConnection(serverAddress, serverPort), userName);
+        subscribeUserMessage();
+        subscribeUserName();
+        subscribeServerAddress();
+        subscribeServerPort();
+        subscribeState();
         rootPane.getScene().getWindow().addEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, windowCloseHandler);
     }
 
     private void terminateConnectionHandler() {
-        // unregister window close handler
         rootPane.getScene().getWindow().removeEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, windowCloseHandler);
         if (connectionHandler != null) {
             connectionHandler.stopReceiving();
@@ -144,8 +143,16 @@ public class ChatWindowController {
             terminateConnectionHandler();
         }
     }
+    public void subscribeState(){
+        connectionHandler.subscribeState(new ChangeListener<>() {
+            @Override
+            public void changed(ObservableValue<? extends State> observableValue, State oldState, State newState) {
+                stateChanged(newState);
+            }
+        });
+    }
 
-    private void setUserName(){
+    private void subscribeUserName(){
         connectionHandler.subscribeUser(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observableValue, String oldValue, String newValue) {
@@ -159,7 +166,7 @@ public class ChatWindowController {
         });
     }
 
-    public void setServerAddress() {
+    private void subscribeServerAddress() {
         connectionHandler.subscribeServerAddress(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observableValue, String oldValue, String newValue) {
@@ -173,7 +180,7 @@ public class ChatWindowController {
         });
     }
 
-    public void setServerPort() {
+    private void subscribeServerPort() {
         connectionHandler.subscribeServerPort(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observableValue, Number oldValue, Number newValue) {
@@ -187,11 +194,11 @@ public class ChatWindowController {
         });
     }
 
-    public void writeError(String message) {
+    private void writeError(String message) {
         this.messageArea.appendText(String.format("[ERROR] %s\n", message));
     }
 
-    private void userMessage() {
+    private void subscribeUserMessage() {
         connectionHandler.subscribeMessage(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observableValue, String oldValue, String newValue) {
