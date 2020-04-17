@@ -10,6 +10,8 @@ import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static ch.zhaw.pm2.multichat.server.ServerConnectionHandler.State.*;
 
@@ -46,102 +48,96 @@ public class ServerConnectionHandler extends ConnectionHandler {
         return this.userName;
     }
 
-    public void startReceiving() {
-        logger.info("Starting Connection Handler for " + userName);
-        try {
-            logger.info("Start receiving data...");
-            while (connection.isAvailable()) {
-                String data = connection.receive();
-                processData(data);
-            }
-            logger.info("Stopped recieving data");
-        } catch (SocketException e) {
-            logger.info("Connection terminated locally");
-            connectionRegistry.remove(userName);
-            logger.info("Unregistered because client connection terminated: " + userName + " " + e.getMessage());
-        } catch (EOFException e) {
-            logger.info("Connection terminated by remote");
-            connectionRegistry.remove(userName);
-            logger.info("Unregistered because client connection terminated: " + userName + " " + e.getMessage());
-        } catch(IOException e) {
-            logger.warning("Communication error: " + e);
-        } catch(ClassNotFoundException e) {
-            logger.warning("Received object of unknown type: " + e.getMessage());
-        }
-        logger.info("Stopping Connection Handler for " + userName);
+    public void startConnectionHandler() {
+        logger.log(Level.INFO, "Starting Connection Handler for {0}", userName);
     }
 
-    public void stopReceiving() {
-        logger.info("Closing Connection Handler for " + userName);
-        try {
-            logger.info("Stop receiving data...");
-            connection.close();
-            logger.info("Stopped receiving data.");
-        } catch (IOException e) {
-            logger.warning("Failed to close connection." + e);
-        }
-        logger.info("Closed Connection Handler for " + userName);
+    public void stopConnectionHandler() {
+        logger.log(Level.INFO, "Stopping Connection Handler for {0}", userName);
     }
 
+    public void closeConnectionHandler(){ logger.log(Level.INFO, "Starting Connection Handler for {0}", userName); }
 
+    public void unregisteredConnectionHandler(Exception e) {
+        connectionRegistry.remove(userName);
+        logger.log(Level.INFO, "Unregistered because client connection terminated: {0}, {1}",new Object[]{userName, e.getMessage()});
+    }
 
-    private void processData(String data)  {
+    public void processData(String data)  {
         try {
             parseData(data);
             // dispatch operation based on type parameter
             switch (type) {
                 case DATA_TYPE_CONNECT:
-                    if (this.state != NEW)
-                        throw new ChatProtocolException("Illegal state for connect request: " + state);
-                    if (sender == null || sender.isBlank()) sender = this.userName;
-                    if (connectionRegistry.containsKey(sender))
-                        throw new ChatProtocolException("User name already taken: " + sender);
-                    this.userName = sender;
-                    connectionRegistry.put(userName, this);
-                    sendData(USER_NONE, userName, DATA_TYPE_CONFIRM, "Registration successfull for " + userName);
-                    this.state = CONNECTED;
+                    processDataConnect();
                     break;
                 case DATA_TYPE_CONFIRM:
-                    logger.info("Not expecting to receive a CONFIRM request from client");
+                    processDataTypeConfirm();
                     break;
                 case DATA_TYPE_DISCONNECT:
-                    if (state == DISCONNECTED)
-                        throw new ChatProtocolException("Illegal state for disconnect request: " + state);
-                    if (state == CONNECTED) {
-                        connectionRegistry.remove(this.userName);
-                    }
-                    sendData(USER_NONE, userName, DATA_TYPE_CONFIRM, "Confirm disconnect of " + userName);
-                    this.state = DISCONNECTED;
-                    this.stopReceiving();
+                    processDataTypeDisconnect();
                     break;
                 case DATA_TYPE_MESSAGE:
-                    if (state != CONNECTED)
-                        throw new ChatProtocolException("Illegal state for message request: " + state);
-                    if (USER_ALL.equals(reciever)) {
-                        for (ServerConnectionHandler handler : connectionRegistry.values()) {
-                            handler.sendData(sender, reciever, type, payload);
-                        }
-                    } else {
-                        ServerConnectionHandler handler = connectionRegistry.get(reciever);
-                        if (handler != null) {
-                            handler.sendData(sender, reciever, type, payload);
-                        } else {
-                            this.sendData(USER_NONE, userName, DATA_TYPE_ERROR, "Unknown User: " + reciever);
-                        }
-                    }
+                    processDataTypeMessage();
                     break;
                 case DATA_TYPE_ERROR:
-                    logger.warning("Received error from client (" + sender + "): " + payload);
+                    processDataTypeError();
                     break;
                 default:
-                    logger.warning("Unknown data type received: " + type);
-
+                    logger.log(Level.WARNING,"Unknown data type received: {0}",type);
                     break;
             }
         } catch(ChatProtocolException e) {
-            logger.info("Error while processing data" + e.getMessage());
+            logger.log(Level.WARNING,"Error while processing data {0}", e.getMessage());
             sendData(USER_NONE, userName, DATA_TYPE_ERROR, e.getMessage());
         }
     }
 
+    private void processDataTypeError() {
+        logger.log(Level.WARNING,"Received error from client ({0}): {1}", new Object[]{sender, payload});
+    }
+
+    private void processDataTypeMessage() throws ChatProtocolException {
+        if (state != CONNECTED)
+            throw new ChatProtocolException("Illegal state for message request: " + state);
+        if (USER_ALL.equals(reciever)) {
+            for (ServerConnectionHandler handler : connectionRegistry.values()) {
+                handler.sendData(sender, reciever, type, payload);
+            }
+        } else {
+            ServerConnectionHandler handler = connectionRegistry.get(reciever);
+            if (handler != null) {
+                handler.sendData(sender, reciever, type, payload);
+            } else {
+                this.sendData(USER_NONE, userName, DATA_TYPE_ERROR, "Unknown User: " + reciever);
+            }
+        }
+    }
+
+    private void processDataTypeDisconnect() throws ChatProtocolException {
+        if (state == DISCONNECTED)
+            throw new ChatProtocolException("Illegal state for disconnect request: " + state);
+        if (state == CONNECTED) {
+            connectionRegistry.remove(this.userName);
+        }
+        sendData(USER_NONE, userName, DATA_TYPE_CONFIRM, "Confirm disconnect of " + userName);
+        this.state = DISCONNECTED;
+        this.stopReceiving();
+    }
+
+    private void processDataTypeConfirm() {
+        logger.info("Not expecting to receive a CONFIRM request from client");
+    }
+
+    private void processDataConnect() throws ChatProtocolException {
+        if (this.state != NEW)
+            throw new ChatProtocolException("Illegal state for connect request: " + state);
+        if (sender == null || sender.isBlank()) sender = this.userName;
+        if (connectionRegistry.containsKey(sender))
+            throw new ChatProtocolException("User name already taken: " + sender);
+        this.userName = sender;
+        connectionRegistry.put(userName, this);
+        sendData(USER_NONE, userName, DATA_TYPE_CONFIRM, "Registration successfull for " + userName);
+        this.state = CONNECTED;
+    }
 }

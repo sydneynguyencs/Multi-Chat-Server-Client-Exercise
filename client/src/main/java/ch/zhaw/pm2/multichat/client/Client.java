@@ -7,7 +7,10 @@ import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
-
+/**
+ * The client creates a new NetworkConnection instance to connect to the server, which opens a connection to the
+ *given host (domainname or ip-address) on the specified server.
+ */
 public class Client {
     private static final Logger logger = Logger.getLogger(Client.class.getCanonicalName());
 
