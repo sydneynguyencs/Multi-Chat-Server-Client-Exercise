@@ -1,5 +1,6 @@
 package ch.zhaw.pm2.multichat.client;
 
+import ch.zhaw.pm2.multichat.protocol.ConnectionHandler;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -14,7 +15,7 @@ import java.util.logging.Logger;
  * This class loads the FXML for the client GUI.
  */
 public class ClientUI extends Application {
-
+    protected static final Logger logger = Logger.getLogger(ConnectionHandler.class.getCanonicalName());
 
     /**
      * This method starts the GUI.
@@ -37,7 +38,7 @@ public class ClientUI extends Application {
             primaryStage.setTitle("Multichat Client");
             primaryStage.show();
         } catch(IOException e) {
-            System.err.println("Error starting up UI" + e.getMessage());
+            logger.log(Level.SEVERE,"Error starting up UI {0}",e.getMessage());
         }
     }
 }
