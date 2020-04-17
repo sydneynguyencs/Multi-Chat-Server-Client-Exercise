@@ -31,8 +31,6 @@ public class ChatWindowController {
     private ArrayBlockingQueue<String> queue;
     private ObservableValue<StringPropertyBase> data;
 
-
-
     private WindowCloseHandler windowCloseHandler = new WindowCloseHandler();
 
     @FXML private Pane rootPane;
@@ -63,6 +61,7 @@ public class ChatWindowController {
     private void toggleConnection () {
         if (connectionHandler == null || connectionHandler.getState() != CONNECTED) {
             connect();
+
         } else {
             disconnect();
         }
@@ -72,7 +71,8 @@ public class ChatWindowController {
         try {
             startConnectionHandler();
             connectionHandler.connect();
-        } catch(ChatProtocolException | IOException e) {
+            //connectionHandler.postConnection(true);
+        } catch(IOException | ChatProtocolException e) {
             writeError(e.getMessage());
         }
     }
@@ -84,6 +84,7 @@ public class ChatWindowController {
         }
         try {
             connectionHandler.disconnect();
+            //connectionHandler.postConnection(false);
         } catch (ChatProtocolException e) {
             writeError(e.getMessage());
         }
@@ -101,11 +102,7 @@ public class ChatWindowController {
             String receiver = matcher.group(1);
             String message = matcher.group(2);
             if (receiver == null || receiver.isBlank()) receiver = ClientConnectionHandler.USER_ALL;
-            try {
-                connectionHandler.message(receiver, message);
-            } catch (ChatProtocolException e) {
-                writeError(e.getMessage());
-            }
+            connectionHandler.postMessage(receiver, message);
         } else {
             writeError("Not a valid message format.");
         }
@@ -118,18 +115,12 @@ public class ChatWindowController {
         connectionHandler = new ClientConnectionHandler(
             NetworkHandler.openConnection(serverAddress, serverPort), userName, this);
         // register window close handler
+        //connectionHandler.startReceiving();
+        userMessage();
+        setUserName();
+        setServerAddress();
+        setServerPort();
         rootPane.getScene().getWindow().addEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, windowCloseHandler);
-        connectionHandler.subscribeMessage(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observableValue, String oldValue, String newValue) {
-                Platform.runLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        messageArea.appendText(newValue);
-                    }
-                });
-            }
-        });
     }
 
     private void terminateConnectionHandler() {
@@ -154,29 +145,44 @@ public class ChatWindowController {
         }
     }
 
-    public void setUserName(String userName) {
-        Platform.runLater(new Runnable() {
+    private void setUserName(){
+        connectionHandler.subscribeUser(new ChangeListener<String>() {
             @Override
-            public void run() {
-                userNameField.setText(userName);
+            public void changed(ObservableValue<? extends String> observableValue, String oldValue, String newValue) {
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        userNameField.setText(newValue);
+                    }
+                });
             }
         });
     }
 
-    public void setServerAddress(String serverAddress) {
-        Platform.runLater(new Runnable() {
+    public void setServerAddress() {
+        connectionHandler.subscribeServerAddress(new ChangeListener<String>() {
             @Override
-            public void run() {
-                serverAddressField.setText(serverAddress);
+            public void changed(ObservableValue<? extends String> observableValue, String oldValue, String newValue) {
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        serverAddressField.setText(newValue);
+                    }
+                });
             }
         });
     }
 
-    public void setServerPort(int serverPort) {
-        Platform.runLater(new Runnable() {
+    public void setServerPort() {
+        connectionHandler.subscribeServerPort(new ChangeListener<Number>() {
             @Override
-            public void run() {
-                serverPortField.setText(Integer.toString(serverPort));
+            public void changed(ObservableValue<? extends Number> observableValue, Number oldValue, Number newValue) {
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        serverPortField.setText(String.valueOf(newValue));
+                    }
+                });
             }
         });
     }
@@ -185,12 +191,18 @@ public class ChatWindowController {
         this.messageArea.appendText(String.format("[ERROR] %s\n", message));
     }
 
-    public void writeInfo(String message) {
-        this.messageArea.appendText(String.format("[INFO] %s\n", message));
-    }
-
-    public void writeMessage(String sender, String reciever, String payload) {
-        this.messageArea.appendText(String.format("[%s -> %s] %s\n", sender, reciever, payload));
+    private void userMessage() {
+        connectionHandler.subscribeMessage(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observableValue, String oldValue, String newValue) {
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        messageArea.appendText(newValue);
+                    }
+                });
+            }
+        });
     }
 
     class WindowCloseHandler implements EventHandler<WindowEvent> {

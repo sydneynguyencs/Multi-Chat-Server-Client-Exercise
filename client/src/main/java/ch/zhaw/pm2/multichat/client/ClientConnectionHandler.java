@@ -3,13 +3,14 @@ package ch.zhaw.pm2.multichat.client;
 import ch.zhaw.pm2.multichat.protocol.ChatProtocolException;
 import ch.zhaw.pm2.multichat.protocol.ConnectionHandler;
 import ch.zhaw.pm2.multichat.protocol.NetworkHandler;
+import javafx.beans.property.IntegerPropertyBase;
 import javafx.beans.property.StringPropertyBase;
 
 import javafx.beans.value.ChangeListener;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketException;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static ch.zhaw.pm2.multichat.client.ClientConnectionHandler.State.*;
 
@@ -17,8 +18,12 @@ public class ClientConnectionHandler extends ConnectionHandler {
     private final ChatWindowController controller;
     public static final String USER_ALL = "*"; //TODO: ??
     private State state = NEW;
-    private ArrayBlockingQueue<String> queue;
+    private LinkedBlockingQueue<Message> queue;
+    LinkedBlockingQueue<Boolean> connectionQueue;
     private StringPropertyBase observableMessage;
+    private StringPropertyBase observableUser;
+    private StringPropertyBase observableServerAddress;
+    private IntegerPropertyBase observableServerPort;
     private Thread senderThread;
     private Thread receiverThread;
 
@@ -28,7 +33,8 @@ public class ClientConnectionHandler extends ConnectionHandler {
         super(connection);
         this.userName = (userName == null || userName.isBlank())? USER_NONE : userName;
         this.controller = controller;
-        queue = new ArrayBlockingQueue<>(10000);
+        queue = new LinkedBlockingQueue<>();
+        connectionQueue = new LinkedBlockingQueue<>();
         observableMessage = new StringPropertyBase() {
             @Override
             public Object getBean() {
@@ -39,11 +45,38 @@ public class ClientConnectionHandler extends ConnectionHandler {
                 return null;
             }
         };
-        senderThread = new Thread() {
+        observableUser = new StringPropertyBase() {
             @Override
-            public void run() {
+            public Object getBean() {
+                return null;
+            }
+            @Override
+            public String getName() {
+                return null;
             }
         };
+        observableServerAddress = new StringPropertyBase() {
+            @Override
+            public Object getBean() {
+                return null;
+            }
+            @Override
+            public String getName() {
+                return null;
+            }
+        };
+        observableServerPort = new IntegerPropertyBase() {
+            @Override
+            public Object getBean() {
+                return null;
+            }
+            @Override
+            public String getName() {
+                return null;
+            }
+        };
+
+        senderThread = new Thread(new SenderThread());
         receiverThread = new Thread() {
             @Override
             public void run() {
@@ -108,57 +141,74 @@ public class ClientConnectionHandler extends ConnectionHandler {
         observableMessage.addListener(listener);
     }
 
+    public void subscribeUser(ChangeListener<? super String> listener){
+        observableUser.addListener(listener);
+    }
+
+    public void subscribeServerAddress(ChangeListener<? super String> listener){
+        observableServerAddress.addListener(listener);
+    }
+
+    public void subscribeServerPort(ChangeListener<? super Number> listener){
+        observableServerPort.addListener(listener);
+    }
+
     private void processData(String data) {
         parseData(data);
         // dispatch operation based on type parameter
-        if (type.equals(DATA_TYPE_CONNECT)) {
-            logger.warning("Illegal connect request from server");
-        } else if (type.equals(DATA_TYPE_CONFIRM)) {
-            if (state == CONFIRM_CONNECT) {
-                this.userName = reciever;
-                controller.setUserName(userName);
-                controller.setServerPort(connection.getRemotePort());
-                controller.setServerAddress(connection.getRemoteHost());
-                //controller.writeInfo(payload);
+        switch (type) {
+            case DATA_TYPE_CONNECT:
+                logger.warning("Illegal connect request from server");
+                break;
+            case DATA_TYPE_CONFIRM:
+                if (state == CONFIRM_CONNECT) {
+                    this.userName = reciever;
+                    observableUser.set(userName);
+                    observableServerPort.set(connection.getRemotePort());
+                    observableServerAddress.set(connection.getRemoteHost());
+                    String writtenMessage = String.format("[INFO] %s\n", payload);
+                    observableMessage.set(writtenMessage);
+                    logger.info("CONFIRM: " + payload);
+                    this.setState(CONNECTED);
+                } else if (state == CONFIRM_DISCONNECT) {
+                    String writtenMessage = String.format("[INFO] %s\n", payload);
+                    observableMessage.set(writtenMessage);
+                    logger.info("CONFIRM: " + payload);
+                    this.setState(DISCONNECTED);
+                } else {
+                    logger.warning("Got unexpected confirm message: " + payload);
+                }
+                break;
+            case DATA_TYPE_DISCONNECT: {
+                if (state == DISCONNECTED) {
+                    logger.info("DISCONNECT: Already in disconnected: " + payload);
+                    return;
+                }
                 String writtenMessage = String.format("[INFO] %s\n", payload);
                 observableMessage.set(writtenMessage);
-                logger.info("CONFIRM: " + payload);
-                this.setState(CONNECTED);
-            } else if (state == CONFIRM_DISCONNECT) {
-                //controller.writeInfo(payload);
-                String writtenMessage = String.format("[INFO] %s\n", payload);
-                observableMessage.set(writtenMessage);
-                logger.info("CONFIRM: " + payload);
+                logger.info("DISCONNECT: " + payload);
                 this.setState(DISCONNECTED);
-            } else {
-                logger.warning("Got unexpected confirm message: " + payload);
+                break;
             }
-        } else if (type.equals(DATA_TYPE_DISCONNECT)) {
-            if (state == DISCONNECTED) {
-                logger.info("DISCONNECT: Already in disconnected: " + payload);
-                return;
+            case DATA_TYPE_MESSAGE: {
+                if (state != CONNECTED) {
+                    logger.info("MESSAGE: Illegal state " + state + " for message: " + payload);
+                    return;
+                }
+                String writtenMessage = String.format("[%s -> %s] %s\n", sender, reciever, payload);
+                observableMessage.set(writtenMessage);
+                logger.severe("MESSAGE: From " + sender + " to " + reciever + ": " + payload);
+                break;
             }
-            //controller.writeInfo(payload);
-            String writtenMessage = String.format("[INFO] %s\n", payload);
-            observableMessage.set(writtenMessage);
-            logger.info("DISCONNECT: " + payload);
-            this.setState(DISCONNECTED);
-        } else if (type.equals(DATA_TYPE_MESSAGE)) {
-            if (state != CONNECTED) {
-                logger.info("MESSAGE: Illegal state " + state + " for message: " + payload);
-                return;
+            case DATA_TYPE_ERROR: {
+                String writtenMessage = String.format(String.format("[ERROR] %s\n", payload));
+                observableMessage.set(writtenMessage);
+                logger.severe("ERROR: " + payload);
+                break;
             }
-            //controller.writeMessage(sender, reciever, payload); // TODO: must be on UI thread
-            String writtenMessage = String.format("[%s -> %s] %s\n", sender, reciever, payload);
-            observableMessage.set(writtenMessage);
-            logger.severe("MESSAGE: From " + sender + " to " + reciever + ": " + payload);
-        } else if (type.equals(DATA_TYPE_ERROR)) {
-            //controller.writeError(payload);
-            String writtenMessage = String.format(String.format("[ERROR] %s\n", payload));
-            observableMessage.set(writtenMessage);
-            logger.severe("ERROR: " + payload);
-        } else {
-            logger.severe("Unknown data type received: " + type);
+            default:
+                logger.severe("Unknown data type received: " + type);
+                break;
         }
     }
 
@@ -174,9 +224,56 @@ public class ClientConnectionHandler extends ConnectionHandler {
         this.setState(CONFIRM_DISCONNECT);
     }
 
-    public void message(String receiver, String message) throws ChatProtocolException {
+    private void message(String receiver, String message) throws ChatProtocolException {
         if (state != CONNECTED) throw new ChatProtocolException("Illegal state for message: " + state);
-        this.sendData(userName, receiver, DATA_TYPE_MESSAGE,message);
+        this.sendData(userName, receiver, DATA_TYPE_MESSAGE, message);
     }
 
+    public void postMessage(String receiver, String message) {
+        try {
+            queue.put(new Message(receiver, message));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /*public void postConnection(Boolean connected) throws InterruptedException {
+        connectionQueue.put(connected);
+    }*/
+
+    public class Message {
+        String receiver;
+        String message;
+
+        public Message(String receiver, String message) {
+            this.receiver = receiver;
+            this.message = message;
+        }
+    }
+
+    private class SenderThread implements Runnable {
+        Boolean connected;
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    //connected = connectionQueue.take();
+                    Message message = queue.take();
+                    try {
+                       /* if (connected) {
+                            connect();
+                        } else {
+                            disconnect();
+                        }*/
+                        message(message.receiver, message.message);
+                    } catch (ChatProtocolException e) {
+                        observableMessage.set(String.format("[ERROR] %s\n", e.getMessage()));
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    return;
+                }
+            }
+        }
+    }
 }
