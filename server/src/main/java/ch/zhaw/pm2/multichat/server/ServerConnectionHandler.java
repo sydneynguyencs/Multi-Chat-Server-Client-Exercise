@@ -47,6 +47,7 @@ public class ServerConnectionHandler extends ConnectionHandler {
     /**
      * Starts connection handler with user specified message.
      */
+    @Override
     public void startConnectionHandler() {
         logger.log(Level.INFO, "Starting Connection Handler for {0}", userName);
     }
@@ -54,6 +55,7 @@ public class ServerConnectionHandler extends ConnectionHandler {
     /**
      * Stops connection handler with user specified message.
      */
+    @Override
     public void stopConnectionHandler() {
         logger.log(Level.INFO, "Stopping Connection Handler for {0}", userName);
     }
@@ -61,8 +63,10 @@ public class ServerConnectionHandler extends ConnectionHandler {
     /**
      * Closes connection handler with user specified message.
      */
+    @Override
     public void closeConnectionHandler(){ logger.log(Level.INFO, "Starting Connection Handler for {0}", userName); }
 
+    @Override
     /**
      * Handles unregistered connection handler.
      * Removes user name from registry.
@@ -73,6 +77,7 @@ public class ServerConnectionHandler extends ConnectionHandler {
         logger.log(Level.INFO, "Unregistered because client connection terminated: {0}, {1}",new Object[]{userName, e.getMessage()});
     }
 
+    @Override
     /**
      * Processes user inputs depending on the data type.
      * @param data  user inputs

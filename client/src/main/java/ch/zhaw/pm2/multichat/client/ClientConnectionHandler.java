@@ -4,6 +4,7 @@ import ch.zhaw.pm2.multichat.protocol.ChatProtocolException;
 import ch.zhaw.pm2.multichat.protocol.ConnectionHandler;
 import ch.zhaw.pm2.multichat.protocol.NetworkHandler;
 import javafx.beans.property.*;
+
 import javafx.beans.value.ChangeListener;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
@@ -66,6 +67,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
     /**
      * Starts the connection handler.
      */
+    @Override
     public void startConnectionHandler() {
         logger.info("Starting Connection Handler");
     }
@@ -73,6 +75,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
     /**
      * Starts the connection handler.
      */
+    @Override
     public void stopConnectionHandler() {
         logger.info("Stopped Connection Handler");
     }
@@ -82,12 +85,14 @@ public class ClientConnectionHandler extends ConnectionHandler {
      * Interrupts the sender and the receiver threads to clean up
      * to avoid leaking resources
      */
+    @Override
     public void closeConnectionHandler() {
         logger.info("Closing Connection Handler to Server");
         senderThread.interrupt();
         receiverThread.interrupt();
     }
 
+    @Override
     /**
      * Handles unregistered connection handler
      * @param e exception thrown with warning message
@@ -189,6 +194,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
      * Processes user inputs depending on the data type.
      * @param data  user inputs
      */
+    @Override
     public void processData(String data) {
         parseData(data);
         // dispatch operation based on type parameter
