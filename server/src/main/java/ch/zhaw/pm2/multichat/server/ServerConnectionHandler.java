@@ -10,6 +10,8 @@ import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static ch.zhaw.pm2.multichat.server.ServerConnectionHandler.State.*;
 
@@ -47,20 +49,18 @@ public class ServerConnectionHandler extends ConnectionHandler {
     }
 
     public void startConnectionHandler() {
-        logger.info("Starting Connection Handler for " + userName);
+        logger.log(Level.INFO, "Starting Connection Handler for {0}", userName);
     }
 
     public void stopConnectionHandler() {
-        logger.info("Stopping Connection Handler for " + userName);
+        logger.log(Level.INFO, "Stopping Connection Handler for {0}", userName);
     }
 
-    public void closeConnectionHandler() {
-        logger.info("Closing Connection Handler for " + userName);
-    }
+    public void closeConnectionHandler(){ logger.log(Level.INFO, "Starting Connection Handler for {0}", userName); }
 
     public void unregisteredConnectionHandler(Exception e) {
         connectionRegistry.remove(userName);
-        logger.info("Unregistered because client connection terminated: " + userName + " " + e.getMessage());
+        logger.log(Level.INFO, "Unregistered because client connection terminated: {0}, {1}",new Object[]{userName, e.getMessage()});
     }
 
     public void processData(String data)  {
@@ -84,17 +84,17 @@ public class ServerConnectionHandler extends ConnectionHandler {
                     processDataTypeError();
                     break;
                 default:
-                    logger.warning("Unknown data type received: " + type);
+                    logger.log(Level.WARNING,"Unknown data type received: {0}",type);
                     break;
             }
         } catch(ChatProtocolException e) {
-            logger.info("Error while processing data" + e.getMessage());
+            logger.log(Level.WARNING,"Error while processing data {0}", e.getMessage());
             sendData(USER_NONE, userName, DATA_TYPE_ERROR, e.getMessage());
         }
     }
 
     private void processDataTypeError() {
-        logger.warning("Received error from client (" + sender + "): " + payload);
+        logger.log(Level.WARNING,"Received error from client ({0}): {1}", new Object[]{sender, payload});
     }
 
     private void processDataTypeMessage() throws ChatProtocolException {

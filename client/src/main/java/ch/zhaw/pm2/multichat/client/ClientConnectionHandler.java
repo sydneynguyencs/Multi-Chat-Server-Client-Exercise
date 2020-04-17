@@ -8,6 +8,7 @@ import javafx.beans.property.StringPropertyBase;
 import javafx.beans.value.ChangeListener;
 
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.logging.Level;
 
 import static ch.zhaw.pm2.multichat.client.ClientConnectionHandler.State.*;
 
@@ -78,7 +79,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
     }
 
     public void unregisteredConnectionHandler(Exception e) {
-        logger.warning("Unregistered because connection terminated" + e.getMessage());
+        logger.log(Level.WARNING, "Unregistered because connection terminated {0}", e.getMessage());
     }
 
     public void subscribeMessage(ChangeListener<? super String> listener){
@@ -99,7 +100,7 @@ public class ClientConnectionHandler extends ConnectionHandler {
         } else if (type.equals(DATA_TYPE_ERROR)) {
             processDataTypeError();
         } else {
-            logger.warning("Unknown data type received: " + type);
+            logger.log(Level.WARNING, "Unknown data type received: {0}", type);
         }
     }
 
@@ -133,46 +134,46 @@ public class ClientConnectionHandler extends ConnectionHandler {
             //controller.writeInfo(payload);
             String writtenMessage = String.format("[INFO] %s\n", payload);
             observableMessage.set(writtenMessage);
-            logger.info("CONFIRM: " + payload);
+            logger.log(Level.INFO,"CONFIRM: {0}",  payload);
             this.setState(CONNECTED);
         } else if (state == CONFIRM_DISCONNECT) {
             //controller.writeInfo(payload);
             String writtenMessage = String.format("[INFO] %s\n", payload);
             observableMessage.set(writtenMessage);
-            logger.info("CONFIRM: " + payload);
+            logger.log(Level.INFO,"CONFIRM: {0}",  payload);
             this.setState(DISCONNECTED);
         } else {
-            logger.warning("Got unexpected confirm message: " + payload);
+            logger.log(Level.WARNING,"Got unexpected confirm message: {0}", payload);
         }
     }
 
     private void processDataTypeDisconnected(){
         if (state == DISCONNECTED) {
-            logger.info("DISCONNECT: Already in disconnected: " + payload);
+            logger.log(Level.INFO,"DISCONNECT: Already in disconnected: {0}", payload);
             return;
         }
         //controller.writeInfo(payload);
         String writtenMessage = String.format("[INFO] %s\n", payload);
         observableMessage.set(writtenMessage);
-        logger.info("DISCONNECT: " + payload);
+        logger.log(Level.INFO,"DISCONNECT: {0}", payload);
         this.setState(DISCONNECTED);
     }
 
     private void processDataTypeMessage() {
         if (state != CONNECTED) {
-            logger.info("MESSAGE: Illegal state " + state + " for message: " + payload);
+            logger.log(Level.INFO, "MESSAGE: Illegal state {0} for message: {1}", new Object[]{state, payload});
             return;
         }
         //controller.writeMessage(sender, reciever, payload); // TODO: must be on UI thread
         String writtenMessage = String.format("[%s -> %s] %s\n", sender, reciever, payload);
         observableMessage.set(writtenMessage);
-        logger.info("MESSAGE: From " + sender + " to " + reciever + ": " + payload);
+        logger.log(Level.INFO, "MESSAGE: From {0} to {1}: {2}}", new Object[]{sender, reciever, payload});
     }
 
     private void processDataTypeError() {
         //controller.writeError(payload);
         String writtenMessage = String.format(String.format("[ERROR] %s\n", payload));
         observableMessage.set(writtenMessage);
-        logger.warning("ERROR: " + payload);
+        logger.log(Level.WARNING,"ERROR: {0}", payload);
     }
 }

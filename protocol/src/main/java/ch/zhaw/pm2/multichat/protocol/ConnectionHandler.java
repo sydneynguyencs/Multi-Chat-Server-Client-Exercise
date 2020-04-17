@@ -5,6 +5,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.Scanner;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -55,7 +56,7 @@ public abstract class ConnectionHandler {
                 payload = scanner.nextLine();
             }
         } catch (ChatProtocolException e) {
-            logger.info("Error while processing data" + e.getMessage());
+            logger.log(Level.INFO, "Error while processing data {0}", e.getMessage());
             sendData(USER_NONE, userName, DATA_TYPE_ERROR, e.getMessage());
         } finally {
             scanner.close();
@@ -74,11 +75,11 @@ public abstract class ConnectionHandler {
             try {
                 connection.send(data);
             } catch (SocketException e) {
-                logger.severe("Connection closed: " + e.getMessage());
+                logger.log(Level.SEVERE,"Connection closed: {0}", e.getMessage());
             } catch (EOFException e) {
                 logger.severe("Connection terminated by remote");
             } catch(IOException e) {
-                logger.severe("Communication error: " + e.getMessage());
+                logger.log(Level.SEVERE,"Communication error: {0}", e.getMessage());
             }
         }
     }
@@ -98,9 +99,9 @@ public abstract class ConnectionHandler {
             logger.info("Connection terminated by remote");
             unregisteredConnectionHandler(e);
         } catch(IOException e) {
-            logger.warning("Communication error: " + e);
+            logger.log(Level.WARNING,"Communication error: {0}", e.getMessage());
         } catch(ClassNotFoundException e) {
-            logger.warning("Received object of unknown type: " + e.getMessage());
+            logger.log(Level.WARNING,"Received object of unknown type: {0}" , e.getMessage());
         }
         stopConnectionHandler();
     }
@@ -112,7 +113,7 @@ public abstract class ConnectionHandler {
             connection.close();
             logger.info("Stopped receiving data.");
         } catch (IOException e) {
-            logger.warning("Failed to close connection." + e.getMessage());
+            logger.log(Level.WARNING,"Failed to close connection." + e.getMessage());
         }
         closeConnectionHandler();
         }
