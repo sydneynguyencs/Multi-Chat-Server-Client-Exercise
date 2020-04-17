@@ -8,7 +8,7 @@ import java.util.Scanner;
 import java.util.logging.Logger;
 
 
-public class ConnectionHandler {
+public abstract class ConnectionHandler {
     // Data types used for the Chat Protocol
     protected final NetworkHandler.NetworkConnection<String> connection;
     protected static final Logger logger = Logger.getLogger(ConnectionHandler.class.getCanonicalName());
@@ -82,4 +82,6 @@ public class ConnectionHandler {
             }
         }
     }
+    abstract public void startReceiving();
+    abstract public void stopReceiving();
 }
