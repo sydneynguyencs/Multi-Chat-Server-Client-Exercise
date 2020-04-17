@@ -46,43 +46,6 @@ public class ServerConnectionHandler extends ConnectionHandler {
         return this.userName;
     }
 
-    public void startReceiving() {
-        logger.info("Starting Connection Handler for " + userName);
-        try {
-            logger.info("Start receiving data...");
-            while (connection.isAvailable()) {
-                String data = connection.receive();
-                processData(data);
-            }
-            logger.info("Stopped recieving data");
-        } catch (SocketException e) {
-            logger.info("Connection terminated locally");
-            connectionRegistry.remove(userName);
-            logger.info("Unregistered because client connection terminated: " + userName + " " + e.getMessage());
-        } catch (EOFException e) {
-            logger.info("Connection terminated by remote");
-            connectionRegistry.remove(userName);
-            logger.info("Unregistered because client connection terminated: " + userName + " " + e.getMessage());
-        } catch(IOException e) {
-            logger.warning("Communication error: " + e);
-        } catch(ClassNotFoundException e) {
-            logger.warning("Received object of unknown type: " + e.getMessage());
-        }
-        logger.info("Stopping Connection Handler for " + userName);
-    }
-
-    public void stopReceiving() {
-        logger.info("Closing Connection Handler for " + userName);
-        try {
-            logger.info("Stop receiving data...");
-            connection.close();
-            logger.info("Stopped receiving data.");
-        } catch (IOException e) {
-            logger.warning("Failed to close connection." + e);
-        }
-        logger.info("Closed Connection Handler for " + userName);
-    }
-
     public void startConnectionHandler() {
         logger.info("Starting Connection Handler for " + userName);
     }
