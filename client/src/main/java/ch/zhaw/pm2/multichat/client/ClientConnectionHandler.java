@@ -13,7 +13,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 import static ch.zhaw.pm2.multichat.client.ClientConnectionHandler.State.*;
 
-public class ClientConnectionHandler extends ConnectionHandler{
+public class ClientConnectionHandler extends ConnectionHandler {
     private final ChatWindowController controller;
     public static final String USER_ALL = "*"; //TODO: ??
     private State state = NEW;
@@ -34,7 +34,6 @@ public class ClientConnectionHandler extends ConnectionHandler{
             public Object getBean() {
                 return null;
             }
-
             @Override
             public String getName() {
                 return null;
@@ -49,13 +48,10 @@ public class ClientConnectionHandler extends ConnectionHandler{
             @Override
             public void run() {
                 startReceiving();
-
             }
         };
         senderThread.start();
         receiverThread.start();
-
-
     }
 
     enum State {
@@ -72,40 +68,40 @@ public class ClientConnectionHandler extends ConnectionHandler{
     }
 
     public void startReceiving() {
-        System.out.println("Starting Connection Handler");
+        logger.info("Starting Connection Handler");
         try {
-            System.out.println("Start receiving data...");
+            logger.info("Start receiving data...");
             while (connection.isAvailable()) {
                 String data = connection.receive();
                 processData(data);
             }
-            System.out.println("Stopped recieving data");
+            logger.info("Stopped recieving data");
         } catch (SocketException e) {
-            System.out.println("Connection terminated locally");
+            logger.info("Connection terminated locally");
             this.setState(DISCONNECTED);
-            System.err.println("Unregistered because connection terminated" + e.getMessage());
+            logger.warning("Unregistered because connection terminated" + e.getMessage());
         } catch (EOFException e) {
-            System.out.println("Connection terminated by remote");
+            logger.info("Connection terminated by remote");
             this.setState(DISCONNECTED);
-            System.err.println("Unregistered because connection terminated" + e.getMessage());
+            logger.warning("Unregistered because connection terminated" + e.getMessage());
         } catch(IOException e) {
-            System.err.println("Communication error" + e);
+            logger.warning("Communication error" + e);
         } catch(ClassNotFoundException e) {
-            System.err.println("Received object of unknown type" + e.getMessage());
+            logger.warning("Received object of unknown type" + e.getMessage());
         }
-        System.out.println("Stopped Connection Handler");
+        logger.info("Stopped Connection Handler");
     }
 
     public void stopReceiving() {
-        System.out.println("Closing Connection Handler to Server");
+        logger.info("Closing Connection Handler to Server");
         try {
-            System.out.println("Stop receiving data...");
+            logger.info("Stop receiving data...");
             connection.close();
-            System.out.println("Stopped receiving data.");
+            logger.info("Stopped receiving data.");
         } catch (IOException e) {
-            System.err.println("Failed to close connection." + e.getMessage());
+            logger.warning("Failed to close connection." + e.getMessage());
         }
-        System.out.println("Closed Connection Handler to Server");
+        logger.info("Closed Connection Handler to Server");
     }
 
     public void subscribeMessage(ChangeListener<? super String> listener){
@@ -116,7 +112,7 @@ public class ClientConnectionHandler extends ConnectionHandler{
         parseData(data);
         // dispatch operation based on type parameter
         if (type.equals(DATA_TYPE_CONNECT)) {
-            System.err.println("Illegal connect request from server");
+            logger.warning("Illegal connect request from server");
         } else if (type.equals(DATA_TYPE_CONFIRM)) {
             if (state == CONFIRM_CONNECT) {
                 this.userName = reciever;
@@ -126,45 +122,44 @@ public class ClientConnectionHandler extends ConnectionHandler{
                 //controller.writeInfo(payload);
                 String writtenMessage = String.format("[INFO] %s\n", payload);
                 observableMessage.set(writtenMessage);
-                System.out.println("CONFIRM: " + payload);
+                logger.info("CONFIRM: " + payload);
                 this.setState(CONNECTED);
             } else if (state == CONFIRM_DISCONNECT) {
                 //controller.writeInfo(payload);
                 String writtenMessage = String.format("[INFO] %s\n", payload);
                 observableMessage.set(writtenMessage);
-                System.out.println("CONFIRM: " + payload);
+                logger.info("CONFIRM: " + payload);
                 this.setState(DISCONNECTED);
             } else {
-                System.err.println("Got unexpected confirm message: " + payload);
+                logger.warning("Got unexpected confirm message: " + payload);
             }
         } else if (type.equals(DATA_TYPE_DISCONNECT)) {
             if (state == DISCONNECTED) {
-                System.out.println("DISCONNECT: Already in disconnected: " + payload);
+                logger.info("DISCONNECT: Already in disconnected: " + payload);
                 return;
             }
             //controller.writeInfo(payload);
             String writtenMessage = String.format("[INFO] %s\n", payload);
             observableMessage.set(writtenMessage);
-            System.out.println("DISCONNECT: " + payload);
+            logger.info("DISCONNECT: " + payload);
             this.setState(DISCONNECTED);
         } else if (type.equals(DATA_TYPE_MESSAGE)) {
             if (state != CONNECTED) {
-                System.out.println("MESSAGE: Illegal state " + state + " for message: " + payload);
+                logger.info("MESSAGE: Illegal state " + state + " for message: " + payload);
                 return;
             }
             //controller.writeMessage(sender, reciever, payload); // TODO: must be on UI thread
             String writtenMessage = String.format("[%s -> %s] %s\n", sender, reciever, payload);
             observableMessage.set(writtenMessage);
-            System.out.println("MESSAGE: From " + sender + " to " + reciever + ": " + payload);
+            logger.severe("MESSAGE: From " + sender + " to " + reciever + ": " + payload);
         } else if (type.equals(DATA_TYPE_ERROR)) {
             //controller.writeError(payload);
             String writtenMessage = String.format(String.format("[ERROR] %s\n", payload));
             observableMessage.set(writtenMessage);
-            System.out.println("ERROR: " + payload);
+            logger.severe("ERROR: " + payload);
         } else {
-            System.out.println("Unknown data type received: " + type);
+            logger.severe("Unknown data type received: " + type);
         }
-
     }
 
     public void connect() throws ChatProtocolException {

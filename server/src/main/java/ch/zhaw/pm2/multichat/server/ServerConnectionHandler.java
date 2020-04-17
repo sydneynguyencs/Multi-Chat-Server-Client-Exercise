@@ -47,40 +47,40 @@ public class ServerConnectionHandler extends ConnectionHandler {
     }
 
     public void startReceiving() {
-        System.out.println("Starting Connection Handler for " + userName);
+        logger.info("Starting Connection Handler for " + userName);
         try {
-            System.out.println("Start receiving data...");
+            logger.info("Start receiving data...");
             while (connection.isAvailable()) {
                 String data = connection.receive();
                 processData(data);
             }
-            System.out.println("Stopped recieving data");
+            logger.info("Stopped recieving data");
         } catch (SocketException e) {
-            System.out.println("Connection terminated locally");
+            logger.info("Connection terminated locally");
             connectionRegistry.remove(userName);
-            System.out.println("Unregistered because client connection terminated: " + userName + " " + e.getMessage());
+            logger.info("Unregistered because client connection terminated: " + userName + " " + e.getMessage());
         } catch (EOFException e) {
-            System.out.println("Connection terminated by remote");
+            logger.info("Connection terminated by remote");
             connectionRegistry.remove(userName);
-            System.out.println("Unregistered because client connection terminated: " + userName + " " + e.getMessage());
+            logger.info("Unregistered because client connection terminated: " + userName + " " + e.getMessage());
         } catch(IOException e) {
-            System.err.println("Communication error: " + e);
+            logger.warning("Communication error: " + e);
         } catch(ClassNotFoundException e) {
-            System.err.println("Received object of unknown type: " + e.getMessage());
+            logger.warning("Received object of unknown type: " + e.getMessage());
         }
-        System.out.println("Stopping Connection Handler for " + userName);
+        logger.info("Stopping Connection Handler for " + userName);
     }
 
     public void stopReceiving() {
-        System.out.println("Closing Connection Handler for " + userName);
+        logger.info("Closing Connection Handler for " + userName);
         try {
-            System.out.println("Stop receiving data...");
+            logger.info("Stop receiving data...");
             connection.close();
-            System.out.println("Stopped receiving data.");
+            logger.info("Stopped receiving data.");
         } catch (IOException e) {
-            System.err.println("Failed to close connection." + e);
+            logger.warning("Failed to close connection." + e);
         }
-        System.out.println("Closed Connection Handler for " + userName);
+        logger.info("Closed Connection Handler for " + userName);
     }
 
 
@@ -102,7 +102,7 @@ public class ServerConnectionHandler extends ConnectionHandler {
                     this.state = CONNECTED;
                     break;
                 case DATA_TYPE_CONFIRM:
-                    System.out.println("Not expecting to receive a CONFIRM request from client");
+                    logger.info("Not expecting to receive a CONFIRM request from client");
                     break;
                 case DATA_TYPE_DISCONNECT:
                     if (state == DISCONNECTED)
@@ -131,15 +131,15 @@ public class ServerConnectionHandler extends ConnectionHandler {
                     }
                     break;
                 case DATA_TYPE_ERROR:
-                    System.err.println("Received error from client (" + sender + "): " + payload);
+                    logger.warning("Received error from client (" + sender + "): " + payload);
                     break;
                 default:
-                    System.err.println("Unknown data type received: " + type);
+                    logger.warning("Unknown data type received: " + type);
 
                     break;
             }
         } catch(ChatProtocolException e) {
-            System.out.println("Error while processing data" + e.getMessage());
+            logger.info("Error while processing data" + e.getMessage());
             sendData(USER_NONE, userName, DATA_TYPE_ERROR, e.getMessage());
         }
     }
