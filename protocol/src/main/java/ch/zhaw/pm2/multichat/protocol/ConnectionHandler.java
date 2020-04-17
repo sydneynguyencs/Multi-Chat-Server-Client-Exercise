@@ -129,7 +129,6 @@ public abstract class ConnectionHandler {
      * Stops receiving messages and cloeses the connection handler.
      */
     public void stopReceiving() {
-        //closeConnectionHandler();
         try {
             logger.info("Stop receiving data...");
             connection.close();
