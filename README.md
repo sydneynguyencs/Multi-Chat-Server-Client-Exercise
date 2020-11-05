@@ -11,4 +11,4 @@ Gruppe05 (02) - Einhörner 2020
 
 ## Report of the refactoring process
 
-The report can be found [here]().
+The report can be found [here](https://github.com/sydneynguyencs/Project-Multi-Chat/blob/master/report/Report.pdf).
